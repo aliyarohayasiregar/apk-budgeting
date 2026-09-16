@@ -24,7 +24,7 @@ interface Transaction {
 }
 
 export default function TransactionsPage() {
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,17 +40,25 @@ export default function TransactionsPage() {
   })
 
   useEffect(() => {
-    fetchUser()
-    fetchTransactions()
-    fetchCategories()
-  }, [filterType])
+    setSupabase(createClient())
+  }, [])
+
+  useEffect(() => {
+    if (supabase) {
+      fetchUser()
+      fetchTransactions()
+      fetchCategories()
+    }
+  }, [filterType, supabase])
 
   async function fetchUser() {
+    if (!supabase) return
     const { data: { user } } = await supabase.auth.getUser()
     if (user) setUserId(user.id)
   }
 
   async function fetchTransactions() {
+    if (!supabase) return
     let query = supabase
       .from('transactions')
       .select('*, categories(*)')
@@ -61,13 +69,14 @@ export default function TransactionsPage() {
     }
 
     const { data, error } = await query
-    
+
     if (error) console.error('Error fetching transactions:', error)
     else setTransactions(data || [])
     setLoading(false)
   }
 
   async function fetchCategories() {
+    if (!supabase) return
     const { data, error } = await supabase.from('categories').select('*')
     
     if (error) console.error('Error fetching categories:', error)
@@ -78,12 +87,12 @@ export default function TransactionsPage() {
     e.preventDefault()
     console.log('Submitting transaction:', formData)
     
-    if (!userId) {
+    if (!userId || !supabase) {
       alert('User tidak terautentikasi')
       return
     }
 
-    const { data, error } = await supabase.from('transactions').insert({
+    const { data, error } = await supabase!.from('transactions').insert({
       user_id: userId,
       category_id: formData.category_id,
       amount: parseFloat(formData.amount),
@@ -112,8 +121,9 @@ export default function TransactionsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Hapus transaksi ini?')) return
+    if (!supabase) return
     
-    const { error } = await supabase.from('transactions').delete().eq('id', id)
+    const { error } = await supabase!.from('transactions').delete().eq('id', id)
     
     if (error) {
       alert('Gagal menghapus transaksi: ' + error.message)

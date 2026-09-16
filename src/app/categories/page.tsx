@@ -13,7 +13,7 @@ interface Category {
 }
 
 export default function CategoriesPage() {
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -26,16 +26,24 @@ export default function CategoriesPage() {
   })
 
   useEffect(() => {
-    fetchUser()
-    fetchCategories()
+    setSupabase(createClient())
   }, [])
 
+  useEffect(() => {
+    if (supabase) {
+      fetchUser()
+      fetchCategories()
+    }
+  }, [supabase])
+
   async function fetchUser() {
+    if (!supabase) return
     const { data: { user } } = await supabase.auth.getUser()
     if (user) setUserId(user.id)
   }
 
   async function fetchCategories() {
+    if (!supabase) return
     const { data, error } = await supabase.from('categories').select('*')
     
     if (error) console.error('Error fetching categories:', error)
@@ -47,12 +55,12 @@ export default function CategoriesPage() {
     e.preventDefault()
     console.log('Submitting category:', formData)
     
-    if (!userId) {
+    if (!userId || !supabase) {
       alert('User tidak terautentikasi')
       return
     }
 
-    const { data, error } = await supabase.from('categories').insert({
+    const { data, error } = await supabase!.from('categories').insert({
       ...formData,
       user_id: userId
     }).select()
@@ -71,8 +79,9 @@ export default function CategoriesPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Hapus kategori ini?')) return
+    if (!supabase) return
     
-    const { error } = await supabase.from('categories').delete().eq('id', id)
+    const { error } = await supabase!.from('categories').delete().eq('id', id)
     
     if (error) {
       alert('Gagal menghapus kategori: ' + error.message)

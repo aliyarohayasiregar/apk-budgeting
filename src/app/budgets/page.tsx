@@ -23,7 +23,7 @@ interface Budget {
 }
 
 export default function BudgetsPage() {
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,17 +37,25 @@ export default function BudgetsPage() {
   })
 
   useEffect(() => {
-    fetchUser()
-    fetchBudgets()
-    fetchCategories()
-  }, [selectedMonth, selectedYear])
+    setSupabase(createClient())
+  }, [])
+
+  useEffect(() => {
+    if (supabase) {
+      fetchUser()
+      fetchBudgets()
+      fetchCategories()
+    }
+  }, [selectedMonth, selectedYear, supabase])
 
   async function fetchUser() {
+    if (!supabase) return
     const { data: { user } } = await supabase.auth.getUser()
     if (user) setUserId(user.id)
   }
 
   async function fetchBudgets() {
+    if (!supabase) return
     const { data, error } = await supabase
       .from('budgets')
       .select('*, categories(*)')
@@ -60,6 +68,7 @@ export default function BudgetsPage() {
   }
 
   async function fetchCategories() {
+    if (!supabase) return
     const { data, error } = await supabase
       .from('categories')
       .select('*')
@@ -72,12 +81,12 @@ export default function BudgetsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     
-    if (!userId) {
+    if (!userId || !supabase) {
       alert('User tidak terautentikasi')
       return
     }
 
-    const { data, error } = await supabase.from('budgets').insert({
+    const { data, error } = await supabase!.from('budgets').insert({
       user_id: userId,
       category_id: formData.category_id,
       amount: parseFloat(formData.amount),
@@ -99,8 +108,9 @@ export default function BudgetsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Hapus budget ini?')) return
+    if (!supabase) return
     
-    const { error } = await supabase.from('budgets').delete().eq('id', id)
+    const { error } = await supabase!.from('budgets').delete().eq('id', id)
     
     if (error) {
       alert('Gagal menghapus budget: ' + error.message)
