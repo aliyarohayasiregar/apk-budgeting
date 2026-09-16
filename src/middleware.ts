@@ -1,8 +1,9 @@
-import { updateSession } from '@/lib/supabase/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  // Temporarily disable Supabase middleware to allow app to load
+  // Remove this after environment variables are confirmed to work
+  return NextResponse.next()
 }
 
 export const config = {

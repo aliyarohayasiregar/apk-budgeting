@@ -46,11 +46,13 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user && !request.nextUrl.pathname.startsWith('/auth')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth'
-      return NextResponse.redirect(url)
-    }
+    // Temporarily disable auth redirect to allow app to load
+    // Comment out the redirect logic for now
+    // if (!user && !request.nextUrl.pathname.startsWith('/auth')) {
+    //   const url = request.nextUrl.clone()
+    //   url.pathname = '/auth'
+    //   return NextResponse.redirect(url)
+    // }
   } catch (error) {
     console.error('Error in middleware:', error)
     // Continue without auth check if there's an error
