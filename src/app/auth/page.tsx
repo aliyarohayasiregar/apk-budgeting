@@ -45,13 +45,12 @@ export default function AuthPage() {
           const { error: insertError } = await supabase
             .from('categories')
             .insert(defaultCategories.map(cat => ({
-              user_id: data.user.id,
+              user_id: data.user!.id,
               ...cat
             })))
 
           if (insertError) {
             console.error('Error inserting default categories:', insertError)
-            alert('Gagal membuat kategori default: ' + insertError.message)
           } else {
             console.log('Default categories inserted successfully')
           }
