@@ -23,7 +23,6 @@ interface Budget {
 }
 
 export default function BudgetsPage() {
-  const supabase = createClient()
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,11 +42,13 @@ export default function BudgetsPage() {
   }, [selectedMonth, selectedYear])
 
   async function fetchUser() {
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) setUserId(user.id)
   }
 
   async function fetchBudgets() {
+    const supabase = createClient()
     const { data, error } = await supabase
       .from('budgets')
       .select('*, categories(*)')
@@ -60,6 +61,7 @@ export default function BudgetsPage() {
   }
 
   async function fetchCategories() {
+    const supabase = createClient()
     const { data, error } = await supabase
       .from('categories')
       .select('*')
@@ -77,6 +79,7 @@ export default function BudgetsPage() {
       return
     }
 
+    const supabase = createClient()
     const { data, error } = await supabase.from('budgets').insert({
       user_id: userId,
       category_id: formData.category_id,
@@ -100,6 +103,7 @@ export default function BudgetsPage() {
   async function handleDelete(id: string) {
     if (!confirm('Hapus budget ini?')) return
     
+    const supabase = createClient()
     const { error } = await supabase.from('budgets').delete().eq('id', id)
     
     if (error) {

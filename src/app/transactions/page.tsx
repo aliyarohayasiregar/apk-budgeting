@@ -24,7 +24,6 @@ interface Transaction {
 }
 
 export default function TransactionsPage() {
-  const supabase = createClient()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -46,11 +45,13 @@ export default function TransactionsPage() {
   }, [filterType])
 
   async function fetchUser() {
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) setUserId(user.id)
   }
 
   async function fetchTransactions() {
+    const supabase = createClient()
     let query = supabase
       .from('transactions')
       .select('*, categories(*)')
@@ -68,6 +69,7 @@ export default function TransactionsPage() {
   }
 
   async function fetchCategories() {
+    const supabase = createClient()
     const { data, error } = await supabase.from('categories').select('*')
     
     if (error) console.error('Error fetching categories:', error)
@@ -83,6 +85,7 @@ export default function TransactionsPage() {
       return
     }
 
+    const supabase = createClient()
     const { data, error } = await supabase.from('transactions').insert({
       user_id: userId,
       category_id: formData.category_id,
@@ -113,6 +116,7 @@ export default function TransactionsPage() {
   async function handleDelete(id: string) {
     if (!confirm('Hapus transaksi ini?')) return
     
+    const supabase = createClient()
     const { error } = await supabase.from('transactions').delete().eq('id', id)
     
     if (error) {

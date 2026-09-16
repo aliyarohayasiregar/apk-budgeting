@@ -7,10 +7,10 @@ import Link from 'next/link'
 
 export default function Header() {
   const router = useRouter()
-  const supabase = createClient()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleLogout = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/auth')
   }

@@ -13,7 +13,6 @@ interface Category {
 }
 
 export default function CategoriesPage() {
-  const supabase = createClient()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -31,11 +30,13 @@ export default function CategoriesPage() {
   }, [])
 
   async function fetchUser() {
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) setUserId(user.id)
   }
 
   async function fetchCategories() {
+    const supabase = createClient()
     const { data, error } = await supabase.from('categories').select('*')
     
     if (error) console.error('Error fetching categories:', error)
@@ -52,6 +53,7 @@ export default function CategoriesPage() {
       return
     }
 
+    const supabase = createClient()
     const { data, error } = await supabase.from('categories').insert({
       ...formData,
       user_id: userId
@@ -72,6 +74,7 @@ export default function CategoriesPage() {
   async function handleDelete(id: string) {
     if (!confirm('Hapus kategori ini?')) return
     
+    const supabase = createClient()
     const { error } = await supabase.from('categories').delete().eq('id', id)
     
     if (error) {
