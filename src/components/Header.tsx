@@ -1,18 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function Header() {
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  useEffect(() => {
+    setSupabase(createClient())
+  }, [])
+
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth')
+    if (supabase) {
+      await supabase.auth.signOut()
+      router.push('/auth')
+    }
   }
 
   const navItems = [
