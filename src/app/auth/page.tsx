@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -11,12 +11,22 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
+
+  useEffect(() => {
+    setSupabase(createClient())
+  }, [])
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    if (!supabase) {
+      setError('Supabase client not initialized')
+      setLoading(false)
+      return
+    }
 
     try {
       if (isSignUp) {
@@ -24,8 +34,9 @@ export default function AuthPage() {
           email,
           password,
         })
+
         if (error) throw error
-        
+
         // Insert kategori default untuk user baru
         if (data.user) {
           console.log('User ID:', data.user.id)
@@ -63,6 +74,7 @@ export default function AuthPage() {
           email,
           password,
         })
+
         if (error) throw error
         router.push('/')
       }
