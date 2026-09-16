@@ -30,6 +30,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all')
+  const [userId, setUserId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     category_id: '',
     amount: '',
@@ -39,9 +40,15 @@ export default function TransactionsPage() {
   })
 
   useEffect(() => {
+    fetchUser()
     fetchTransactions()
     fetchCategories()
   }, [filterType])
+
+  async function fetchUser() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) setUserId(user.id)
+  }
 
   async function fetchTransactions() {
     let query = supabase
@@ -69,18 +76,28 @@ export default function TransactionsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    console.log('Submitting transaction:', formData)
     
-    const { error } = await supabase.from('transactions').insert({
+    if (!userId) {
+      alert('User tidak terautentikasi')
+      return
+    }
+
+    const { data, error } = await supabase.from('transactions').insert({
+      user_id: userId,
       category_id: formData.category_id,
       amount: parseFloat(formData.amount),
       description: formData.description,
       transaction_date: formData.transaction_date,
       type: formData.type
-    })
+    }).select()
 
     if (error) {
+      console.error('Error inserting transaction:', error)
       alert('Gagal menambah transaksi: ' + error.message)
     } else {
+      console.log('Transaction inserted successfully:', data)
+      alert('Transaksi berhasil ditambahkan!')
       setShowModal(false)
       setFormData({
         category_id: '',

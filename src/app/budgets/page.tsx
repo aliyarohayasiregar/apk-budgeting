@@ -30,15 +30,22 @@ export default function BudgetsPage() {
   const [showModal, setShowModal] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [userId, setUserId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     category_id: '',
     amount: ''
   })
 
   useEffect(() => {
+    fetchUser()
     fetchBudgets()
     fetchCategories()
   }, [selectedMonth, selectedYear])
+
+  async function fetchUser() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) setUserId(user.id)
+  }
 
   async function fetchBudgets() {
     const { data, error } = await supabase
@@ -65,16 +72,25 @@ export default function BudgetsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     
-    const { error } = await supabase.from('budgets').insert({
+    if (!userId) {
+      alert('User tidak terautentikasi')
+      return
+    }
+
+    const { data, error } = await supabase.from('budgets').insert({
+      user_id: userId,
       category_id: formData.category_id,
       amount: parseFloat(formData.amount),
       month: selectedMonth,
       year: selectedYear
-    })
+    }).select()
 
     if (error) {
+      console.error('Error inserting budget:', error)
       alert('Gagal menambah budget: ' + error.message)
     } else {
+      console.log('Budget inserted successfully:', data)
+      alert('Budget berhasil ditambahkan!')
       setShowModal(false)
       setFormData({ category_id: '', amount: '' })
       fetchBudgets()
