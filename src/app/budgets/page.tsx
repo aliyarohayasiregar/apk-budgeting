@@ -211,7 +211,7 @@ export default function BudgetsPage() {
                 </div>
                 <button
                   onClick={() => setDeleteConfirm(budget.id)}
-                  className="w-8 h-8 rounded-md text-stone-400 hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-center opacity-0 group-hover:opacity-100 shrink-0"
+                  className="w-8 h-8 rounded-md text-stone-400 hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
                 >
                   ×
                 </button>

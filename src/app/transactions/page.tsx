@@ -284,7 +284,7 @@ export default function TransactionsPage() {
                   </span>
                   <button
                     onClick={() => setDeleteConfirm(t.id)}
-                    className="w-8 h-8 rounded-md bg-white border border-stone-200 text-stone-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition flex items-center justify-center opacity-0 group-hover:opacity-100 text-sm shadow-sm"
+                    className="w-8 h-8 rounded-md bg-white border border-stone-200 text-stone-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-sm shadow-sm"
                     title="Hapus"
                   >
                     ×

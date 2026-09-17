@@ -159,7 +159,7 @@ export default function CategoriesPage() {
                 </div>
                 <button
                   onClick={() => setDeleteConfirm(cat.id)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-white border border-stone-200 text-stone-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition flex items-center justify-center opacity-0 group-hover:opacity-100 text-xs shadow-sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-white border border-stone-200 text-stone-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-xs shadow-sm"
                 >
                   ×
                 </button>
