@@ -33,6 +33,11 @@ export default function TransactionsPage() {
   const [filterType, setFilterType]     = useState<'all' | 'income' | 'expense'>('all')
   const [userId, setUserId]             = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  
+  // State Filter Bulan & Tahun
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedYear, setSelectedYear]   = useState(new Date().getFullYear())
+
   const [amountDisplay, setAmountDisplay] = useState('') 
   const [formData, setFormData] = useState({
     category_id: '',
@@ -46,7 +51,7 @@ export default function TransactionsPage() {
     fetchUser()
     fetchTransactions()
     fetchCategories()
-  }, [filterType])
+  }, [filterType, selectedMonth, selectedYear])
 
   async function fetchUser() {
     const supabase = createClient()
@@ -59,15 +64,26 @@ export default function TransactionsPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+
+    // Menghitung tanggal mulai dan akhir dari bulan yang dipilih
+    const lastDayOfMonth = new Date(selectedYear, selectedMonth, 0).getDate()
+    const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`
+    const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`
+
     let query = supabase
       .from('transactions')
       .select('*, categories(*)')
       .eq('user_id', user.id)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate)
       .order('transaction_date', { ascending: false })
+
     if (filterType !== 'all') query = query.eq('type', filterType)
+    
     const { data, error } = await query
     if (error) console.error('Error fetching transactions:', error)
     else setTransactions(data || [])
+    
     setLoading(false)
   }
 
@@ -107,7 +123,7 @@ export default function TransactionsPage() {
     } else {
       setShowModal(false)
       resetForm()
-      fetchTransactions()
+      fetchTransactions() // Akan memuat ulang transaksi bulan ini
     }
   }
 
@@ -133,13 +149,18 @@ export default function TransactionsPage() {
   const totalIncome  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
 
+  const months = [
+    'Januari','Februari','Maret','April','Mei','Juni',
+    'Juli','Agustus','September','Oktober','November','Desember'
+  ]
+
   return (
     <div className="min-h-screen bg-stone-50">
       <Header />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-4 animate-fade-in">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">Transaksi</h1>
             <p className="text-stone-500 text-sm mt-1 font-medium">Catat semua arus kas Anda</p>
@@ -150,6 +171,28 @@ export default function TransactionsPage() {
           >
             + Tambah Transaksi
           </button>
+        </div>
+
+        {/* Month/Year Selector */}
+        <div className="flex gap-2 mb-6 animate-fade-in">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            className="pl-4 pr-10 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white text-sm font-semibold text-slate-700 shadow-sm outline-none"
+          >
+            {months.map((m, i) => (
+              <option key={i} value={i + 1}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="pl-4 pr-10 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white text-sm font-semibold text-slate-700 shadow-sm outline-none"
+          >
+            {[2024, 2025, 2026, 2027].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
 
         {/* Summary cards */}
@@ -201,8 +244,8 @@ export default function TransactionsPage() {
         ) : transactions.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-12 text-center animate-fade-in">
             <div className="text-4xl mb-3 opacity-30 inline-block">📝</div>
-            <p className="font-semibold text-slate-700 mb-1">Belum ada transaksi</p>
-            <p className="text-stone-400 text-sm mb-4">Mulai catat keuangan Anda sekarang</p>
+            <p className="font-semibold text-slate-700 mb-1">Belum ada transaksi di bulan ini</p>
+            <p className="text-stone-400 text-sm mb-4">Pilih bulan lain atau mulai catat pengeluaran Anda</p>
             <button
               onClick={() => setShowModal(true)}
               className="inline-flex items-center px-4 py-2 bg-slate-800 text-white rounded-lg font-semibold text-sm shadow-sm active:scale-95"
