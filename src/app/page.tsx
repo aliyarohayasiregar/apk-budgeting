@@ -11,7 +11,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20">
       <Header />
       <Dashboard userId={user.id} />
     </div>
@@ -23,12 +23,10 @@ async function Dashboard({ userId }: { userId: string }) {
 
   const now = new Date()
   const currentMonth = now.getMonth() + 1
-  const currentYear = now.getFullYear()
-  
-  // Get last day of current month
+  const currentYear  = now.getFullYear()
   const lastDayOfMonth = new Date(currentYear, currentMonth, 0).getDate()
 
-  const [{ data: budgets }, { data: transactions }, { data: categories }] = await Promise.all([
+  const [{ data: budgets }, { data: transactions }] = await Promise.all([
     supabase
       .from('budgets')
       .select('*, categories(*)')
@@ -40,200 +38,196 @@ async function Dashboard({ userId }: { userId: string }) {
       .gte('transaction_date', `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`)
       .lte('transaction_date', `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`)
       .order('transaction_date', { ascending: false }),
-    supabase
-      .from('categories')
-      .select('*')
   ])
 
-  const totalBudget = budgets?.reduce((sum, b) => sum + Number(b.amount), 0) || 0
-  const totalExpense = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-  const totalIncome = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+  const totalBudget    = budgets?.reduce((s, b) => s + Number(b.amount), 0) || 0
+  const totalExpense   = transactions?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) || 0
+  const totalIncome    = transactions?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) || 0
   const remainingBudget = totalBudget - totalExpense
+  const budgetUsedPct  = totalBudget > 0 ? Math.min((totalExpense / totalBudget) * 100, 100) : 0
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <header className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+      {/* Page header */}
+      <header className="mb-6 sm:mb-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              💰 Dashboard Keuangan
+            <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 mb-1">
+              {now.toLocaleDateString('id-ID', { weekday: 'long' })}
+            </p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              Dashboard Keuangan 📊
             </h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">
+            <p className="text-gray-500 mt-1 text-sm sm:text-base">
               {now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
             </p>
           </div>
           <div className="flex gap-2">
             <a
               href="/transactions"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium shadow-md hover:shadow-lg"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition text-sm font-semibold shadow-md hover:shadow-lg active:scale-95"
             >
-              + Transaksi
+              ➕ Transaksi
             </a>
             <a
               href="/budgets"
-              className="px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition text-sm font-medium"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-white text-indigo-600 border border-indigo-200 rounded-xl hover:bg-indigo-50 transition text-sm font-semibold shadow-sm hover:shadow"
             >
-              + Budget
+              📋 Budget
             </a>
           </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-        <StatCard
-          title="Total Budget"
-          value={totalBudget}
-          type="budget"
-          icon="💵"
-        />
-        <StatCard
-          title="Pengeluaran"
-          value={totalExpense}
-          type="expense"
-          icon="📉"
-        />
-        <StatCard
-          title="Pemasukan"
-          value={totalIncome}
-          type="income"
-          icon="📈"
-        />
-        <StatCard
-          title="Sisa Budget"
-          value={remainingBudget}
-          type="remaining"
-          icon="💎"
-        />
+      {/* Budget overall progress bar */}
+      {totalBudget > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-6 animate-fade-in">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-gray-700">Progress Budget Bulan Ini</span>
+            <span className={`text-sm font-bold ${budgetUsedPct >= 100 ? 'text-red-600' : budgetUsedPct >= 80 ? 'text-orange-500' : 'text-green-600'}`}>
+              {budgetUsedPct.toFixed(0)}% terpakai
+            </span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-3">
+            <div
+              className={`h-3 rounded-full transition-all duration-500 ${
+                budgetUsedPct >= 100 ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                budgetUsedPct >= 80  ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
+                'bg-gradient-to-r from-indigo-500 to-purple-500'
+              }`}
+              style={{ width: `${budgetUsedPct}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-1.5">
+            Rp {totalExpense.toLocaleString('id-ID')} dari Rp {totalBudget.toLocaleString('id-ID')}
+          </p>
+        </div>
+      )}
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <StatCard title="Total Budget"  value={totalBudget}    type="budget"    icon="💵" gradient="from-blue-500 to-indigo-600" />
+        <StatCard title="Pengeluaran"   value={totalExpense}   type="expense"   icon="📉" gradient="from-red-500 to-pink-600" />
+        <StatCard title="Pemasukan"     value={totalIncome}    type="income"    icon="📈" gradient="from-green-500 to-emerald-600" />
+        <StatCard title="Sisa Budget"   value={remainingBudget} type="remaining" icon="💎"
+          gradient={remainingBudget >= 0 ? 'from-purple-500 to-indigo-600' : 'from-red-500 to-orange-500'} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        {/* Recent Transactions */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 animate-fade-in">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+              <span className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-sm">💳</span>
               Transaksi Terbaru
             </h2>
-            <a
-              href="/transactions"
-              className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-            >
-              Lihat Semua
+            <a href="/transactions" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
+              Lihat Semua →
             </a>
           </div>
           {transactions && transactions.length > 0 ? (
-            <div className="space-y-3">
-              {transactions.slice(0, 5).map((transaction) => (
+            <div className="space-y-2.5">
+              {transactions.slice(0, 6).map((t, i) => (
                 <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:shadow-md transition-all"
+                  key={t.id}
+                  className="flex items-center justify-between p-3 rounded-xl border border-gray-50 hover:border-gray-100 hover:bg-gray-50/80 transition-all"
+                  style={{ animationDelay: `${i * 50}ms` }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl bg-gradient-to-br from-indigo-100 to-purple-100">
-                      {transaction.categories?.icon || '📦'}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
+                      t.type === 'income' ? 'bg-green-100' : 'bg-red-100'
+                    }`}>
+                      {t.categories?.icon || '📦'}
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm sm:text-base">
-                        {transaction.description || transaction.categories?.name}
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-800 text-sm truncate">
+                        {t.description || t.categories?.name}
                       </p>
-                      <p className="text-xs sm:text-sm text-gray-500">
-                        {new Date(transaction.transaction_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      <p className="text-xs text-gray-400">
+                        {new Date(t.transaction_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
                     </div>
                   </div>
-                  <span
-                    className={`font-bold text-sm sm:text-base ${
-                      transaction.type === 'income'
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }`}
-                  >
-                    {transaction.type === 'income' ? '+' : '-'}
-                    Rp {Number(transaction.amount).toLocaleString('id-ID')}
+                  <span className={`font-bold text-sm ml-2 shrink-0 ${
+                    t.type === 'income' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {t.type === 'income' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 sm:py-12">
-              <div className="text-4xl sm:text-5xl mb-3">📝</div>
-              <p className="text-gray-500 text-sm sm:text-base">
-                Belum ada transaksi bulan ini
-              </p>
-              <a
-                href="/transactions"
-                className="inline-block mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
-              >
-                Tambah Transaksi
-              </a>
-            </div>
+            <EmptyState
+              emoji="📝"
+              title="Belum ada transaksi"
+              desc="Mulai catat pemasukan dan pengeluaran Anda"
+              href="/transactions"
+              btnLabel="Tambah Transaksi"
+            />
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-              Budget Bulanan
+        {/* Budget per Category */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 animate-fade-in">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+              <span className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-sm">📊</span>
+              Budget per Kategori
             </h2>
-            <a
-              href="/budgets"
-              className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-            >
-              Kelola
+            <a href="/budgets" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
+              Kelola →
             </a>
           </div>
           {budgets && budgets.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               {budgets.map((budget) => {
                 const spent = transactions
                   ?.filter(t => t.category_id === budget.category_id && t.type === 'expense')
-                  .reduce((sum, t) => sum + Number(t.amount), 0) || 0
-                const percentage = (spent / Number(budget.amount)) * 100
-                const isOverBudget = percentage > 100
+                  .reduce((s, t) => s + Number(t.amount), 0) || 0
+                const pct = budget.amount > 0 ? (spent / Number(budget.amount)) * 100 : 0
+                const isOver = pct > 100
 
                 return (
-                  <div key={budget.id} className="p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100">
-                    <div className="flex justify-between items-center mb-2">
+                  <div key={budget.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="flex justify-between items-center mb-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl sm:text-2xl">{budget.categories?.icon}</span>
-                        <span className="font-medium text-gray-900 text-sm sm:text-base">
-                          {budget.categories?.name}
-                        </span>
+                        <span className="text-xl">{budget.categories?.icon}</span>
+                        <span className="font-semibold text-gray-800 text-sm">{budget.categories?.name}</span>
+                        {isOver && <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium">Over!</span>}
                       </div>
-                      <span className={`text-xs sm:text-sm font-medium ${
-                        isOverBudget ? 'text-red-600' : 'text-gray-600'
-                      }`}>
-                        Rp {spent.toLocaleString('id-ID')} / Rp {Number(budget.amount).toLocaleString('id-ID')}
+                      <span className={`text-xs font-bold ${isOver ? 'text-red-600' : 'text-gray-500'}`}>
+                        {pct.toFixed(0)}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className={`h-2 sm:h-3 rounded-full transition-all ${
-                          isOverBudget ? 'bg-gradient-to-r from-red-500 to-red-600' : 
-                          percentage > 80 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 
-                          'bg-gradient-to-r from-green-500 to-emerald-600'
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          isOver ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                          pct > 80 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
+                          'bg-gradient-to-r from-indigo-500 to-purple-500'
                         }`}
-                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
                       />
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {percentage.toFixed(0)}% terpakai
+                    <div className="flex justify-between mt-1">
+                      <span className="text-xs text-gray-400">Rp {spent.toLocaleString('id-ID')}</span>
+                      <span className="text-xs text-gray-400">Rp {Number(budget.amount).toLocaleString('id-ID')}</span>
                     </div>
                   </div>
                 )
               })}
             </div>
           ) : (
-            <div className="text-center py-8 sm:py-12">
-              <div className="text-4xl sm:text-5xl mb-3">📊</div>
-              <p className="text-gray-500 text-sm sm:text-base">
-                Belum ada budget bulan ini
-              </p>
-              <a
-                href="/budgets"
-                className="inline-block mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
-              >
-                Buat Budget
-              </a>
-            </div>
+            <EmptyState
+              emoji="📊"
+              title="Belum ada budget"
+              desc="Buat budget bulanan untuk kontrol pengeluaran"
+              href="/budgets"
+              btnLabel="Buat Budget"
+            />
           )}
         </div>
       </div>
@@ -241,30 +235,43 @@ async function Dashboard({ userId }: { userId: string }) {
   )
 }
 
-function StatCard({ title, value, type, icon }: { title: string; value: number; type: string; icon: string }) {
-  const gradients = {
-    budget: 'from-blue-500 to-indigo-600',
-    expense: 'from-red-500 to-pink-600',
-    income: 'from-green-500 to-emerald-600',
-    remaining: value >= 0 ? 'from-purple-500 to-indigo-600' : 'from-red-500 to-orange-600'
-  }
-
-  const textColors = {
-    budget: 'text-blue-600',
-    expense: 'text-red-600',
-    income: 'text-green-600',
-    remaining: value >= 0 ? 'text-purple-600' : 'text-red-600'
-  }
+function StatCard({
+  title, value, type, icon, gradient
+}: {
+  title: string; value: number; type: string; icon: string; gradient: string
+}) {
+  const isNegative = type === 'remaining' && value < 0
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl sm:text-2xl">{icon}</span>
-        <p className="text-xs sm:text-sm font-medium text-gray-600">{title}</p>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 hover:shadow-md transition-all group animate-fade-in">
+      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-xl mb-3 shadow-sm group-hover:scale-110 transition-transform`}>
+        {icon}
       </div>
-      <p className={`text-lg sm:text-2xl font-bold ${textColors[type as keyof typeof textColors]}`}>
-        Rp {value.toLocaleString('id-ID')}
+      <p className="text-xs font-medium text-gray-500 mb-0.5 uppercase tracking-wide">{title}</p>
+      <p className={`text-base sm:text-xl font-bold leading-tight ${isNegative ? 'text-red-600' : 'text-gray-900'}`}>
+        Rp {Math.abs(value).toLocaleString('id-ID')}
       </p>
+      {isNegative && <p className="text-xs text-red-500 mt-0.5">⚠️ Melebihi budget</p>}
+    </div>
+  )
+}
+
+function EmptyState({
+  emoji, title, desc, href, btnLabel
+}: {
+  emoji: string; title: string; desc: string; href: string; btnLabel: string
+}) {
+  return (
+    <div className="text-center py-10">
+      <div className="text-5xl mb-3 animate-float inline-block">{emoji}</div>
+      <p className="font-semibold text-gray-700 mb-1">{title}</p>
+      <p className="text-gray-400 text-sm mb-4">{desc}</p>
+      <a
+        href={href}
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition text-sm font-semibold shadow-md active:scale-95"
+      >
+        ➕ {btnLabel}
+      </a>
     </div>
   )
 }
