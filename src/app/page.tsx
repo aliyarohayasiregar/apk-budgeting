@@ -34,11 +34,13 @@ async function Dashboard({ userId }: { userId: string }) {
     supabase
       .from('budgets')
       .select('*, categories(*)')
+      .eq('user_id', userId)
       .eq('month', currentMonth)
       .eq('year', currentYear),
     supabase
       .from('transactions')
       .select('*, categories(*)')
+      .eq('user_id', userId)
       .gte('transaction_date', startDate)
       .lte('transaction_date', endDate)
       .order('transaction_date', { ascending: true }), // Ascending for trend chart

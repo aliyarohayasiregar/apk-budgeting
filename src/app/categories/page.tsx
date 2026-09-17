@@ -38,7 +38,9 @@ export default function CategoriesPage() {
   async function fetchCategories() {
     setLoading(true)
     const supabase = createClient()
-    const { data, error } = await supabase.from('categories').select('*').order('type').order('name')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data, error } = await supabase.from('categories').select('*').eq('user_id', user.id).order('type').order('name')
     if (error) console.error(error)
     else setCategories(data || [])
     setLoading(false)

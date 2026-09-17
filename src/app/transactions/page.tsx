@@ -57,9 +57,12 @@ export default function TransactionsPage() {
   async function fetchTransactions() {
     setLoading(true)
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
     let query = supabase
       .from('transactions')
       .select('*, categories(*)')
+      .eq('user_id', user.id)
       .order('transaction_date', { ascending: false })
     if (filterType !== 'all') query = query.eq('type', filterType)
     const { data, error } = await query
@@ -70,7 +73,9 @@ export default function TransactionsPage() {
 
   async function fetchCategories() {
     const supabase = createClient()
-    const { data, error } = await supabase.from('categories').select('*')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data, error } = await supabase.from('categories').select('*').eq('user_id', user.id)
     if (error) console.error('Error fetching categories:', error)
     else setCategories(data || [])
   }

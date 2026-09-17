@@ -49,9 +49,12 @@ export default function BudgetsPage() {
   async function fetchBudgets() {
     setLoading(true)
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
     const { data, error } = await supabase
       .from('budgets')
       .select('*, categories(*)')
+      .eq('user_id', user.id)
       .eq('month', selectedMonth)
       .eq('year', selectedYear)
     if (error) console.error(error)
@@ -61,7 +64,9 @@ export default function BudgetsPage() {
 
   async function fetchCategories() {
     const supabase = createClient()
-    const { data, error } = await supabase.from('categories').select('*').eq('type', 'expense')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data, error } = await supabase.from('categories').select('*').eq('user_id', user.id).eq('type', 'expense')
     if (error) console.error(error)
     else setCategories(data || [])
   }
